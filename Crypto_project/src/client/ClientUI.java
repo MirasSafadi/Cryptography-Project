@@ -17,7 +17,7 @@ public class ClientUI  extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		// TODO Auto-generated method stub
-		HomePageViewController homePage = HomePageViewController.loadController();
+		LoginViewController homePage = LoginViewController.loadController();
 		homePage.start(primaryStage);
 	}
 
