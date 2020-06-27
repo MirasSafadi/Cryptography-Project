@@ -1,33 +1,32 @@
 package client;
-
+//java imports
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.util.Base64;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Formatter;
 
+//local imports
 import server.TwoFish;
 import server.Utils;
 import server.RSA;
 
 public class Client {
-
-	public static void main(String[] args) {
-//		MessageDigest md = MessageDigest.getInstance("SHA-1");
-//        String resultOfHash = byteArray2Hex(md.digest(imageInBytes));
-		/*
-		 private String byteArray2Hex(final byte[] hash) {
-        Formatter formatter = new Formatter();
-        for (byte b : hash) {
-            formatter.format("%02x", b);
-        }
-        return formatter.toString();
-    }
-
+	
+//	private static String byteArray2Hex(final byte[] hash) {
+//        Formatter formatter = new Formatter();
+//        for (byte b : hash) {
+//            formatter.format("%02x", b);
+//        }
+////        String s = formatter.toString();
+//        formatter.close();
+//        return formatter.toString();
+//    }
+	
+	/*
     public String signImage(RSA rsa, String imagePath) throws IOException, NoSuchAlgorithmException {
 
         File file = new File(imagePath);
@@ -42,18 +41,49 @@ public class Client {
             // String stringOfImage = new String(imageInBytes);
             return rsa.signature(resultOfHash);
 
-    }
+    }*/
+	
+	
+	
+	
+	public static void main(String[] args) {
+		RSA rsa = new RSA(2048);//in practice 2048 is more than enough
+		//on sender side:
+		String msg = "twoFish is nice";
+		MessageDigest md;
+		String digest = null;
+		try {
+			md = MessageDigest.getInstance("SHA-256");
+			digest = new String(md.digest(msg.getBytes()));//create a digest of the encKey
+			System.out.println(digest);
+		} catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
-		 */
-		
-		RSA rsa = new RSA(2048);
-		String encKey = rsa.encrypt("twoFish is nice");
+		String sign = rsa.sign(digest);//sign the digest
+		String encKey = rsa.encrypt(msg);//encrypt the message to be sent.
 		System.out.println(encKey);
-		String decKey = rsa.decrypt(encKey);
+		//==========================SEND TO RECEIVER(encKey,sign,RSA)======================================
+		//on receiver side:
+		String decKey = rsa.decrypt(encKey);//decrypt the received message
 		System.out.println(decKey);
 		
-		String sign = rsa.sign(encKey);
-		System.out.println(rsa.verifySignature(sign, new BigInteger(encKey.getBytes())));
+		//create a digest of the decrypted message
+		MessageDigest md1;
+		String digest1 = null;
+		try {
+			md1 = MessageDigest.getInstance("SHA-256");
+			digest1 = new String(md1.digest(decKey.getBytes()));//create a digest of the encKey
+			System.out.println(digest1);
+		} catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		//verify signature by comparing the digest of decrypted message and the signature
+		System.out.println(rsa.verifySignature(sign, digest1));
+		
+		
 		
 		File out = null;
 		try {

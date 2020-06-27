@@ -1,11 +1,12 @@
 package server;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-
+/*
+ * use RSA only when a message digest is created.
+ */
 public class RSA {
     private final static SecureRandom random = new SecureRandom();
     private BigInteger privateKey;//this is d
@@ -13,16 +14,9 @@ public class RSA {
     private BigInteger modulus;//this is n=p*q
     
 
-    public BigInteger getPublicKey() {
-        return publicKey;
-    }
+    public BigInteger getPublicKey() {return publicKey;}
 
-    public BigInteger getModulus() {
-        return modulus;
-    }
-
-    
-
+    public BigInteger getModulus() {return modulus;}
     //generate an N-bit (roughly) public and private key
     public RSA(int N) {
     	//generate two random prime numbers
@@ -62,7 +56,7 @@ public class RSA {
     //signature is very similar to encryption only difference is in signature we use private key
     //instead of public key
     public String sign(String message) {
-    	//convert message to a number
+    	//convert message to a number - aka create a digest
         byte[] bytes = message.getBytes();
         BigInteger messageBigInt = new BigInteger(bytes);
         //sign it using the same encryption technique only using the private key instead of the public one
@@ -70,18 +64,17 @@ public class RSA {
         //return the signature as a string
         return Base64.getEncoder().encodeToString(signature.toByteArray());
     }
-    //signature - the signature to verify, msg - encrypted key/message
-    public boolean verifySignature(String signature, BigInteger encryptedMsg) {
-    	//
-//    	BigInteger encryptedMsgInt = new BigInteger(Base64.getDecoder().decode(encryptedMsg));
+    //signature - the signature to verify
+    //msg - decrypted key/message
+    public boolean verifySignature(String signature, String decryptedMsg) {
+    	//get the number representing the decrypted msg
+    	BigInteger decryptedMsgInt = new BigInteger(decryptedMsg.getBytes());
     	//decode the signature message as a number
-        BigInteger decodedSignature = new BigInteger(Base64.getDecoder().decode(signature));
-        //encrypt the signature 
-        BigInteger encryptedDecodedSignature = decodedSignature.modPow(this.publicKey, this.modulus);
-        //===========>hash both encryptedDecodedSignature and msg and compare hash values<===================//
-        //compare encrypted decoded signature and  
-        return encryptedMsg.equals(encryptedDecodedSignature);
-//        return encryptedDecodedSignature.equals(encryptedMsg);
+        //and decrypt it using the public key
+    	BigInteger decodedSignature = new BigInteger(Base64.getDecoder().decode(signature));
+        BigInteger decryptedDecodedSignature = decodedSignature.modPow(this.publicKey, this.modulus);
+        //compare decrypted decoded signature and decrypted msg Int
+        return decryptedDecodedSignature.equals(decryptedMsgInt);
     }
 
     @Override
