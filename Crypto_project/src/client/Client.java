@@ -7,19 +7,61 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
+import java.util.Base64;
 
 import server.TwoFish;
 import server.Utils;
+import server.RSA;
 
 public class Client {
 
 	public static void main(String[] args) {
+//		MessageDigest md = MessageDigest.getInstance("SHA-1");
+//        String resultOfHash = byteArray2Hex(md.digest(imageInBytes));
+		/*
+		 private String byteArray2Hex(final byte[] hash) {
+        Formatter formatter = new Formatter();
+        for (byte b : hash) {
+            formatter.format("%02x", b);
+        }
+        return formatter.toString();
+    }
+
+    public String signImage(RSA rsa, String imagePath) throws IOException, NoSuchAlgorithmException {
+
+        File file = new File(imagePath);
+
+            FileInputStream imageStream = new FileInputStream(imagePath);
+            byte[] imageInBytes = new byte[imageStream.available()];
+            imageStream.read(imageInBytes);
+
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            String resultOfHash = byteArray2Hex(md.digest(imageInBytes));
+
+            // String stringOfImage = new String(imageInBytes);
+            return rsa.signature(resultOfHash);
+
+    }
+
+		 */
+		
+		RSA rsa = new RSA(2048);
+		String encKey = rsa.encrypt("twoFish is nice");
+		System.out.println(encKey);
+		String decKey = rsa.decrypt(encKey);
+		System.out.println(decKey);
+		
+		String sign = rsa.sign(encKey);
+		System.out.println(rsa.verifySignature(sign, new BigInteger(encKey.getBytes())));
+		
 		File out = null;
 		try {
 			// path should be user provided
-			String wav = convertWAVtoHEX(new File("C:\\Users\\Pc\\Desktop\\WAV Sample 3 seconds.wav"));
-			System.out.println(wav);
-			System.out.println("length = " + wav.length());
+//			String wav = convertWAVtoHEX(new File("C:\\Users\\Pc\\Desktop\\WAV Sample 3 seconds.wav"));
+//			System.out.println(wav);
+//			System.out.println("length = " + wav.length());
+			//-------------------------------------------------------------------------------------------//
 			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			BufferedReader reader = new BufferedReader(new FileReader(in));
 			// this is just a test it will be removed later
