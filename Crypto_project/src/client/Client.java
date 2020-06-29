@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Formatter;
 
 //local imports
@@ -87,15 +88,25 @@ public class Client {
 		
 		File out = null;
 		try {
-			// path should be user provided
-//			String wav = convertWAVtoHEX(new File("C:\\Users\\Pc\\Desktop\\WAV Sample 3 seconds.wav"));
-//			System.out.println(wav);
-//			System.out.println("length = " + wav.length());
+			
+			//path should be user provided for the WAV file
+			String wav = convertWAVtoHEX(new File("C:\\Users\\Static\\Desktop\\M1F1-Alaw-AFsp.wav"));
+			//System.out.println(wav);
+			System.out.println("length = " + wav.length());
+			String[] output=Inputsplitter(wav,32);
 			//-------------------------------------------------------------------------------------------//
-			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
+			//Fill the input file in the correct line length for further processing
+			FileWriter writer = new FileWriter("C:\\Users\\Static\\Desktop\\in.txt");
+			int len = output.length;
+			for (int i = 0; i < len; i++) {
+			   writer.write(output[i]+'\n');
+			}
+			writer.close();
+			
+			File in = new File("C:\\Users\\Static\\Desktop\\in.txt");
 			BufferedReader reader = new BufferedReader(new FileReader(in));
 			// this is just a test it will be removed later
-			out = new File("C:\\Users\\Pc\\Desktop\\out.txt");
+			out = new File("C:\\Users\\Static\\Desktop\\out.txt");
 			out.createNewFile();
 			FileWriter myWriter = new FileWriter(out.getAbsolutePath());
 			String st;
@@ -137,7 +148,7 @@ public class Client {
 //			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			reader = new BufferedReader(new FileReader(plainText));
 			// path should be computed by the server.
-			cipherText = new File("C:\\Users\\Pc\\Desktop\\" + fileName);
+			cipherText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
 			cipherText.createNewFile();
 			myWriter = new FileWriter(cipherText.getAbsolutePath());
 			String st;
@@ -174,7 +185,7 @@ public class Client {
 //			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			reader = new BufferedReader(new FileReader(cipherText));
 			// path should be user provided
-			plainText = new File("C:\\Users\\Pc\\Desktop\\" + fileName);
+			plainText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
 			plainText.createNewFile();
 			myWriter = new FileWriter(plainText.getAbsolutePath());
 			String st;
@@ -221,6 +232,32 @@ public class Client {
 		}
 		reader.close();
 		return sb.toString();
+	}
+	
+	private static String[] Inputsplitter(String input, int length)
+	{
+		int len=input.length();
+		int zeroPadCheck=len%32;		//Save how many zeros we need to zero-pad the last input line
+		if(zeroPadCheck!=0) len=(input.length()/32)+1;
+		else len=input.length()/32;
+		
+	    String[] output = new String[len];
+	    int pos = 0;
+	    for(int i=0;i<len;i++)
+	    {	
+	    	//Zero-padding the last line in an uneven Modulo32 input
+	    	if((i==len-1)&&(zeroPadCheck!=0)) {				
+	    		output[i]=input.substring(pos, pos+zeroPadCheck);
+		    	char[] repeat = new char[zeroPadCheck];
+		    	Arrays.fill(repeat, '0');
+		    	output[i] += new String(repeat);
+	    		break;
+	    	}
+	        output[i] = input.substring(pos, pos+length);
+	        pos = pos + length;
+	        
+	    }
+	    return output;
 	}
 
 	public static boolean sendToServer(File fileToSend) {
