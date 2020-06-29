@@ -5,10 +5,26 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import common.Utils;
 
 public class CommonMethods {
+	public static MessageDigest md =  null;
+	// plainText file should be in format of 16 bytes per line all in hex (32 hex
+	// characters)
+	// key should be 16 bytes
+	public static void initMD() {
+		if(md == null) {
+			try {
+				md = MessageDigest.getInstance("SHA-256");
+			} catch (NoSuchAlgorithmException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 	public static File encryptFile(File plainText, String key) {
 		// this code opens an input file, writes it's contents on an out file (created
 		// within)
@@ -43,7 +59,9 @@ public class CommonMethods {
 		return cipherText;
 	}
 	
-	
+	// cipherText file should be in format of 16 bytes per line all in hex (32 hex
+	// characters)
+	// key should be 16 bytes
 	public static File decryptFile(File cipherText, String key) {
 		// this code opens an input file, writes it's contents on an out file (created
 		// within)
@@ -80,10 +98,11 @@ public class CommonMethods {
 	
 	
 	
-	public static String signMsg(File fileToSign,RSA rsa) {
-		
-		return null;
+	//md should be initialised with SHA-256
+	//rsa should also be initialised with 2048
+	public static String signMsg(String msg2sign,RSA rsa,MessageDigest md) {
+		String digest = new String(md.digest(msg2sign.getBytes()));//create a digest of the file
+		return rsa.sign(digest);
 	}
-	
 	
 }

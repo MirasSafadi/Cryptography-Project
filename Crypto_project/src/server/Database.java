@@ -8,14 +8,20 @@ import java.util.HashMap;
 
 public class Database {
 	//password should be hashed before insertion
-	private static HashMap<String,String> users;//save tuples of (userID,password)
-	private static HashMap<String,ArrayList<File>> files;
-	private static MessageDigest md;
+	private  HashMap<String,String> users;//save tuples of (userID,password)
+	private  HashMap<String,ArrayList<File>> files;
+	private  MessageDigest md;
+	public static Database instance = null;
 	
-	public Database() throws NoSuchAlgorithmException {
+	private Database() throws NoSuchAlgorithmException {
 		users = new HashMap<>();
 		files = new HashMap<>();
 		md = MessageDigest.getInstance("SHA-256");
+	}
+	public static Database getInstance() throws NoSuchAlgorithmException {
+		if(instance == null)
+			return new Database();
+		return instance;
 	}
 	public boolean addUser(String userID,String password) {
 		String hashPass = new String(md.digest(password.getBytes()));
@@ -54,6 +60,12 @@ public class Database {
 		filesList.add(file);
 		files.replace(userID, files.get(userID), filesList);
 		return true;
+	}
+	public File getFile(String userID,String fileName) {
+		for (File f : files.get(userID)) 
+			if(f.getName().equals(fileName))
+				return f;
+		return null;
 	}
 	
 }

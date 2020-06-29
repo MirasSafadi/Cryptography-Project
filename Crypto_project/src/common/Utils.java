@@ -79,4 +79,20 @@ public class Utils {
 		reader.close();
 		return sb.toString();
 	}
+	
+	
+	public static String fileToString(File f) {
+		StringBuilder sb = new StringBuilder();
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(f));
+			String st;
+			while ((st = br.readLine()) != null)
+				sb.append(st);
+			br.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}
 }
