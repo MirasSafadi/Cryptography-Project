@@ -7,25 +7,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Formatter;
 
-//local imports
-import server.TwoFish;
-import server.Utils;
-import server.RSA;
+import common.CommonMethods;
+import common.RSA;
+import common.Utils;
 
 public class Client {
 	
-//	private static String byteArray2Hex(final byte[] hash) {
-//        Formatter formatter = new Formatter();
-//        for (byte b : hash) {
-//            formatter.format("%02x", b);
-//        }
-////        String s = formatter.toString();
-//        formatter.close();
-//        return formatter.toString();
-//    }
+/*	private static String byteArray2Hex(final byte[] hash) {
+        Formatter formatter = new Formatter();
+        for (byte b : hash) {
+            formatter.format("%02x", b);
+        }
+        formatter.close();
+        return formatter.toString();
+    }*/
 	
 	/*
     public String signImage(RSA rsa, String imagePath) throws IOException, NoSuchAlgorithmException {
@@ -43,10 +39,6 @@ public class Client {
             return rsa.signature(resultOfHash);
 
     }*/
-	
-	
-	
-	
 	public static void main(String[] args) {
 		RSA rsa = new RSA(2048);//in practice 2048 is more than enough
 		//on sender side:
@@ -90,10 +82,10 @@ public class Client {
 		try {
 			
 			//path should be user provided for the WAV file
-			String wav = convertWAVtoHEX(new File("C:\\Users\\Static\\Desktop\\M1F1-Alaw-AFsp.wav"));
+			String wav = Utils.convertWAVtoHEX(new File("C:\\Users\\Static\\Desktop\\M1F1-Alaw-AFsp.wav"));
 			//System.out.println(wav);
 			System.out.println("length = " + wav.length());
-			String[] output=Inputsplitter(wav,32);
+			String[] output= Utils.Inputsplitter(wav,32);
 			//-------------------------------------------------------------------------------------------//
 			//Fill the input file in the correct line length for further processing
 			FileWriter writer = new FileWriter("C:\\Users\\Static\\Desktop\\in.txt");
@@ -114,7 +106,7 @@ public class Client {
 				// encrypt each line and write it in an out file
 				String line = st.substring(0, 32);
 				myWriter.write(line);
-				int[] res = StringTointArray(line);
+				int[] res = Utils.StringTointArray(line);
 				myWriter.append('\n');
 				myWriter.flush();
 //				System.out.println(st);
@@ -127,138 +119,27 @@ public class Client {
 			e.printStackTrace();
 			System.exit(0);
 		}
-		File enc = encryptFile(out, "30302030302037442030302030302020");
+		File enc = CommonMethods.encryptFile(out, "30302030302037442030302030302020");
 
-		File dec = decryptFile(enc, "30302030302037442030302030302020");
+		File dec = CommonMethods.decryptFile(enc, "30302030302037442030302030302020");
 
 	}
 
 	// plainText file should be in format of 16 bytes per line all in hex (32 hex
 	// characters)
 	// key should be 16 bytes
-	public static File encryptFile(File plainText, String key) {
-		// this code opens an input file, writes it's contents on an out file (created
-		// within)
-		int[] keyArr = StringTointArray(key);
-		BufferedReader reader = null;
-		File cipherText = null;
-		FileWriter myWriter = null;
-		String fileName = plainText.getName().split("\\.")[0] + "_Encrypted.txt";
-		try {
-//			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
-			reader = new BufferedReader(new FileReader(plainText));
-			// path should be computed by the server.
-			cipherText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
-			cipherText.createNewFile();
-			myWriter = new FileWriter(cipherText.getAbsolutePath());
-			String st;
-			while ((st = reader.readLine()) != null) {
-				// encrypt each line and write it in an out file
-				int[] encryptedLine = TwoFish.encrypt(StringTointArray(st), keyArr);
-				String cipherLine = Utils.writeInput(encryptedLine);
-				myWriter.write(cipherLine);
-				myWriter.append('\n');
-				myWriter.flush();
-			}
-			System.out.println("Successfully encrypted file.");
-			reader.close();
-			myWriter.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return cipherText;
-	}
-
-	// plainText file should be in format of 16 bytes per line all in hex (32 hex
-	// characters)
-	// key should be 16 bytes
-	public static File decryptFile(File cipherText, String key) {
-		// this code opens an input file, writes it's contents on an out file (created
-		// within)
-		int[] keyArr = StringTointArray(key);
-		BufferedReader reader = null;
-		File plainText = null;
-		FileWriter myWriter = null;
-		String fileName = cipherText.getName().split("\\.")[0] + "_Decrypted.txt";
-		try {
-//			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
-			reader = new BufferedReader(new FileReader(cipherText));
-			// path should be user provided
-			plainText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
-			plainText.createNewFile();
-			myWriter = new FileWriter(plainText.getAbsolutePath());
-			String st;
-			while ((st = reader.readLine()) != null) {
-				// encrypt each line and write it in an out file
-				int[] encryptedLine = TwoFish.decrypt(StringTointArray(st), keyArr);
-				String cipherLine = Utils.writeInput(encryptedLine);
-				myWriter.write(cipherLine);
-				myWriter.append('\n');
-				myWriter.flush();
-			}
-			System.out.println("Successfully decrypted file.");
-			reader.close();
-			myWriter.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return plainText;
-	}
-
-	private static int[] StringTointArray(String st) {
-		int[] res = new int[st.length() / 2];
-		int c = 0;
-		for (int i = 0; i < st.length() - 1; i += 2) {
-			int x = Integer.parseInt(st.substring(i, i + 2), 16);
-			res[c++] = x;
-		}
-		int[] p = new int[4];
-		for (int i = 0; i < p.length; i++) {
-			p[i] = res[4 * i] + 256 * res[4 * i + 1] + (res[4 * i + 2] << 16) + (res[4 * i + 3] << 24);
-		}
-		return p;
-	}
-
-	private static String convertWAVtoHEX(File wavInput) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		BufferedReader reader = new BufferedReader(new FileReader(wavInput));
-		int value;
-		while ((value = reader.read()) != -1) {
-			for (byte b : TwoFish.asBytes(value)) {
-				sb.append(String.format("%02X", b));
-			}
-		}
-		reader.close();
-		return sb.toString();
-	}
 	
-	private static String[] Inputsplitter(String input, int length)
-	{
-		int len=input.length();
-		int zeroPadCheck=len%32;		//Save how many zeros we need to zero-pad the last input line
-		if(zeroPadCheck!=0) len=(input.length()/32)+1;
-		else len=input.length()/32;
-		
-	    String[] output = new String[len];
-	    int pos = 0;
-	    for(int i=0;i<len;i++)
-	    {	
-	    	//Zero-padding the last line in an uneven Modulo32 input
-	    	if((i==len-1)&&(zeroPadCheck!=0)) {				
-	    		output[i]=input.substring(pos, pos+zeroPadCheck);
-		    	char[] repeat = new char[zeroPadCheck];
-		    	Arrays.fill(repeat, '0');
-		    	output[i] += new String(repeat);
-	    		break;
-	    	}
-	        output[i] = input.substring(pos, pos+length);
-	        pos = pos + length;
-	        
-	    }
-	    return output;
-	}
+
+	// plainText file should be in format of 16 bytes per line all in hex (32 hex
+	// characters)
+	// key should be 16 bytes
+
+
+
+
+	
+	
+	
 
 	public static boolean sendToServer(File fileToSend) {
 		return false;
