@@ -15,7 +15,7 @@ public class CommonMethods {
 	// plainText file should be in format of 16 bytes per line all in hex (32 hex
 	// characters)
 	// key should be 16 bytes
-	public static void initMD() {
+	public static void init() {
 		if(md == null) {
 			try {
 				md = MessageDigest.getInstance("SHA-256");
@@ -25,82 +25,85 @@ public class CommonMethods {
 			}
 		}
 	}
-	public static File encryptFile(File plainText, String key) {
-		// this code opens an input file, writes it's contents on an out file (created
-		// within)
+	//encrypts the file in place - does not create a new one.
+	public static void encryptFile(File plainText, String key) {
 		int[] keyArr = Utils.StringTointArray(key);
 		BufferedReader reader = null;
-		File cipherText = null;
 		FileWriter myWriter = null;
-		String fileName = plainText.getName().split("\\.")[0] + "_Encrypted.txt";
 		try {
-//			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			reader = new BufferedReader(new FileReader(plainText));
-			// path should be computed by the server.
-			cipherText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
-			cipherText.createNewFile();
-			myWriter = new FileWriter(cipherText.getAbsolutePath());
+			
 			String st;
+			StringBuffer sb = new StringBuffer();
 			while ((st = reader.readLine()) != null) {
-				// encrypt each line and write it in an out file
+				// encrypt each line and write it back
 				int[] encryptedLine = TwoFish.encrypt(Utils.StringTointArray(st), keyArr);
 				String cipherLine = Utils.writeInput(encryptedLine);
-				myWriter.write(cipherLine);
-				myWriter.append('\n');
-				myWriter.flush();
+				sb.append(cipherLine);
+				sb.append("\n");
 			}
-			System.out.println("Successfully encrypted file.");
+			
+			myWriter = new FileWriter(plainText.getAbsolutePath());
+			myWriter.write(sb.toString());
 			reader.close();
 			myWriter.close();
+			System.out.println("Successfully encrypted file.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return cipherText;
 	}
 	
 	// cipherText file should be in format of 16 bytes per line all in hex (32 hex
 	// characters)
 	// key should be 16 bytes
-	public static File decryptFile(File cipherText, String key) {
+	public static void decryptFile(File cipherText, String key) {
 		// this code opens an input file, writes it's contents on an out file (created
 		// within)
 		int[] keyArr = Utils.StringTointArray(key);
 		BufferedReader reader = null;
-		File plainText = null;
 		FileWriter myWriter = null;
-		String fileName = cipherText.getName().split("\\.")[0] + "_Decrypted.txt";
 		try {
-//			File in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			reader = new BufferedReader(new FileReader(cipherText));
-			// path should be user provided
-			plainText = new File("C:\\Users\\Static\\Desktop\\" + fileName);
-			plainText.createNewFile();
-			myWriter = new FileWriter(plainText.getAbsolutePath());
+			
 			String st;
+			StringBuffer sb = new StringBuffer();
 			while ((st = reader.readLine()) != null) {
-				// encrypt each line and write it in an out file
-				int[] encryptedLine = TwoFish.decrypt(Utils.StringTointArray(st), keyArr);
-				String cipherLine = Utils.writeInput(encryptedLine);
-				myWriter.write(cipherLine);
-				myWriter.append('\n');
-				myWriter.flush();
+				// decrypt each line and write it back
+				int[] decryptedLineInt = TwoFish.decrypt(Utils.StringTointArray(st), keyArr);
+				String decryptedLine = Utils.writeInput(decryptedLineInt);
+				sb.append(decryptedLine);
+				sb.append("\n");
 			}
-			System.out.println("Successfully decrypted file.");
+			
+			myWriter = new FileWriter(cipherText.getAbsolutePath());
+			myWriter.write(sb.toString());
 			reader.close();
 			myWriter.close();
+			System.out.println("Successfully decrypted file.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return plainText;
+	}
+	public static void signFile(File fileToSign) {
+		String fileContent = Utils.fileToString(fileToSign);
+		String signature = signMsg(fileContent,new RSA(2048));
+		String newContent = signature+"\n"+fileContent;
+		try {
+			FileWriter myWriter = new FileWriter(fileToSign.getAbsolutePath());
+			myWriter.write(newContent);
+			myWriter.close();
+		}catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	
 	
-	//md should be initialised with SHA-256
 	//rsa should also be initialised with 2048
-	public static String signMsg(String msg2sign,RSA rsa,MessageDigest md) {
+	public static String signMsg(String msg2sign,RSA rsa) {
+		init();
 		String digest = new String(md.digest(msg2sign.getBytes()));//create a digest of the file
 		return rsa.sign(digest);
 	}

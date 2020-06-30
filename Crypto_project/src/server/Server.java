@@ -1,6 +1,10 @@
 package server;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -9,6 +13,7 @@ import common.ClientMessages;
 import common.CommonMethods;
 import common.RSA;
 import common.ServerResponse;
+import common.Utils;
 
 public class Server {
 	private Database db;
@@ -44,7 +49,7 @@ public class Server {
 		String decKey = rsa.decrypt(encKey);// decrypt the received key
 		System.out.println(decKey);
 		//if md is null, initialise it
-		CommonMethods.initMD();
+		CommonMethods.init();
 		// create a digest of the decKey
 		String digest = new String(CommonMethods.md.digest(decKey.getBytes()));
 		System.out.println(digest);
@@ -54,9 +59,30 @@ public class Server {
 			this.key = decKey;
 		sendToClient(exchgKeyResult, ServerResponse.exchange_Key);
 	}
-	private void storeFile(File encryptedFile,String signature,RSA rsa,String userID) {
+	private void storeFile(File encryptedFile,RSA rsa,String userID) {
+		//need to "destroy" the key for this session, i.e. assigning it to null
+		String signature = Utils.extactSignature(encryptedFile);
+		CommonMethods.decryptFile(encryptedFile, this.key);
+		CommonMethods.init();
+		String contents = Utils.fileToString(encryptedFile);
+		String digest = new String(CommonMethods.md.digest(contents.getBytes()));
+		boolean verifySign = rsa.verifySignature(signature, digest);
+		boolean res = false;
+		if(verifySign) {
+			res = db.addFile(userID, encryptedFile);
+			this.key = null;
+		}
+		sendToClient(res, ServerResponse.store_file_Result);
+	}
+	private void getFile(String userID,String filename) {
+		File f = db.getFile(userID, filename);
+		//encrypt file using key exchanged earlier and send it to client.
+		CommonMethods.encryptFile(f, this.key);
+		//sign the file before sending it
+		CommonMethods.signFile(f);
 		//need to "destroy" the key for this session, i.e. assigning it to null
 		this.key = null;
+		sendToClient(f, ServerResponse.request_file_Result);
 	}
 	
 	public void receiveFromClient(Object message,ClientMessages type) {
@@ -73,12 +99,13 @@ public class Server {
 				break;
 			//--------------------------//	
 			case request_file:
+				
 				break;
 		}
 	}
 	public void sendToClient(Object message,ServerResponse type) {
 		if(type == ServerResponse.request_file_Result) {//return file
-			
+			client.receiveFromServer(message, type);
 		}else {//return ack
 			client.receiveFromServer(message, type);
 		}

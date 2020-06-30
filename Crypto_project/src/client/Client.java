@@ -3,9 +3,14 @@ package client;
 //java imports
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -20,7 +25,7 @@ import server.Server;
 public class Client {
 	private String userID;
 	private Server server;
-	private MessageDigest md;
+	private String key;
 	/*
 	 * private static String byteArray2Hex(final byte[] hash) { Formatter formatter
 	 * = new Formatter(); for (byte b : hash) { formatter.format("%02x", b); }
@@ -90,41 +95,41 @@ public class Client {
 		
 		
 		
-		
-		File out = null;
+		File in = null;
 		try {
-
+			/*
 			// path should be user provided for the WAV file
-			String wav = Utils.convertWAVtoHEX(new File("C:\\Users\\Static\\Desktop\\M1F1-Alaw-AFsp.wav"));
+			String wav = Utils.convertWAVtoHEX(new File("C:\\Users\\Pc\\Desktop\\WAV Sample 3 seconds.wav"));
 			// System.out.println(wav);
 			System.out.println("length = " + wav.length());
 			String[] output = Utils.Inputsplitter(wav, 32);
 			// -------------------------------------------------------------------------------------------//
 			// Fill the input file in the correct line length for further processing
-			FileWriter writer = new FileWriter("C:\\Users\\Static\\Desktop\\in.txt");
+			FileWriter writer = new FileWriter("C:\\Users\\Pc\\Desktop\\in.txt");
 			int len = output.length;
 			for (int i = 0; i < len; i++) {
 				writer.write(output[i] + '\n');
+				writer.flush();
 			}
 			writer.close();
+			*/
 
-			File in = new File("C:\\Users\\Static\\Desktop\\in.txt");
+			in = new File("C:\\Users\\Pc\\Desktop\\in.txt");
 			BufferedReader reader = new BufferedReader(new FileReader(in));
-			// this is just a test it will be removed later
-			out = new File("C:\\Users\\Static\\Desktop\\out.txt");
-			out.createNewFile();
-			FileWriter myWriter = new FileWriter(out.getAbsolutePath());
+			
 			String st;
+			StringBuffer sb = new StringBuffer();
 			while ((st = reader.readLine()) != null) {
-				// encrypt each line and write it in an out file
+				//replace every line with the first 32 characters of it
 				String line = st.substring(0, 32);
-				myWriter.write(line);
-				int[] res = Utils.StringTointArray(line);
-				myWriter.append('\n');
-				myWriter.flush();
-//				System.out.println(st);
+				sb.append(line);
+				sb.append("\n");
 			}
 			System.out.println("Successfully wrote to the file.");
+			
+			
+			FileWriter myWriter = new FileWriter(in.getAbsolutePath());
+			myWriter.write(sb.toString());
 			reader.close();
 			myWriter.close();
 		} catch (IOException e) {
@@ -132,11 +137,42 @@ public class Client {
 			e.printStackTrace();
 			System.exit(0);
 		}
-		File enc = CommonMethods.encryptFile(out, "30302030302037442030302030302020");
-
-		File dec = CommonMethods.decryptFile(enc, "30302030302037442030302030302020");
-
+		CommonMethods.encryptFile(in, "30302030302037442030302030302020");
+		
+		CommonMethods.decryptFile(in, "30302030302037442030302030302020");
 	}
+	
+	private void login(String userID,String password) {
+		String credentials[] = {userID,password};
+		sendToServer(credentials, ClientMessages.login);
+	}
+	private void register(String userID,String password) {
+		String credentials[] = {userID,password};
+		sendToServer(credentials, ClientMessages.register);
+	}
+	private void unregister(String userID) {
+		sendToServer(userID, ClientMessages.unregister);
+	}
+	private void exchangeKeys(String key) {
+		RSA rsa = new RSA(2048);// in practice 2048 is more than enough
+		CommonMethods.init();
+		String digest = new String(CommonMethods.md.digest(key.getBytes()));// create a digest of the encKey
+		
+		String sign = rsa.sign(digest);// sign the digest
+		
+		String encKey = rsa.encrypt(key);// encrypt the message to be sent.
+		Object res[] = {encKey,sign,rsa};
+		sendToServer(res, ClientMessages.exchange_key);
+	}
+	private void storeFile(File fileToStore,String userID) {
+		CommonMethods.encryptFile(fileToStore, this.key);
+		CommonMethods.signFile(fileToStore);
+		Object[] res = {fileToStore,userID};
+		sendToServer(res, ClientMessages.store_file);
+	}
+	
+	
+	
 
 	public void receiveFromServer(Object message, ServerResponse type) {
 		if(type == ServerResponse.request_file_Result) {//return file
@@ -146,7 +182,7 @@ public class Client {
 		}
 	}
 
-	public void sendToServer(File fileToSend, ClientMessages type) {
+	public void sendToServer(Object message, ClientMessages type) {
 		switch(type){
 		case login:
 			break;

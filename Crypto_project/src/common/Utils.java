@@ -3,6 +3,7 @@ package common;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -94,5 +95,33 @@ public class Utils {
 			e.printStackTrace();
 		}
 		return sb.toString();
+	}
+	public static String extactSignature(File f) {
+		BufferedReader reader = null;
+		FileWriter myWriter = null;
+		String signature = null;
+		try {
+			reader = new BufferedReader(new FileReader(f));
+			
+			String st;
+			StringBuffer sb = new StringBuffer();
+			//extract the first line, i.e. the signature
+			if((st = reader.readLine()) != null)
+				signature = st;
+			//read the rest of the file, 
+			while ((st = reader.readLine()) != null) {
+				sb.append(st);
+				sb.append("\n");
+			}
+			
+			myWriter = new FileWriter(f.getAbsolutePath());
+			myWriter.write(sb.toString());
+			reader.close();
+			myWriter.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return signature;
 	}
 }
