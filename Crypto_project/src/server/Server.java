@@ -1,11 +1,6 @@
 package server;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import client.Client;
@@ -76,12 +71,14 @@ public class Server {
 	}
 	private void getFile(String userID,String filename) {
 		File f = db.getFile(userID, filename);
-		//encrypt file using key exchanged earlier and send it to client.
-		CommonMethods.encryptFile(f, this.key);
-		//sign the file before sending it
-		CommonMethods.signFile(f);
-		//need to "destroy" the key for this session, i.e. assigning it to null
-		this.key = null;
+		if(f != null) {
+			//encrypt file using key exchanged earlier and send it to client.
+			CommonMethods.encryptFile(f, this.key);
+			//sign the file before sending it
+			CommonMethods.signFile(f);
+			//need to "destroy" the key for this session, i.e. assigning it to null
+			this.key = null;
+		}
 		sendToClient(f, ServerResponse.request_file_Result);
 	}
 	
@@ -104,10 +101,6 @@ public class Server {
 		}
 	}
 	public void sendToClient(Object message,ServerResponse type) {
-		if(type == ServerResponse.request_file_Result) {//return file
-			client.receiveFromServer(message, type);
-		}else {//return ack
-			client.receiveFromServer(message, type);
-		}
+		client.receiveFromServer(message, type);
 	}
 }

@@ -3,29 +3,31 @@ package client;
 //java imports
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import common.ClientMessages;
 //local imports
+import common.ClientMessages;
 import common.CommonMethods;
 import common.RSA;
 import common.ServerResponse;
-import common.Utils;
 import server.Server;
 
-public class Client {
+public class Client{
 	private String userID;
 	private Server server;
 	private String key;
+	
+	private File fileFromServer;
+	private boolean serverAck;
+	
+	
+	public Client(String userID) {
+		this.userID = userID;
+		this.server = new Server();
+	}
 	/*
 	 * private static String byteArray2Hex(final byte[] hash) { Formatter formatter
 	 * = new Formatter(); for (byte b : hash) { formatter.format("%02x", b); }
@@ -142,18 +144,24 @@ public class Client {
 		CommonMethods.decryptFile(in, "30302030302037442030302030302020");
 	}
 	
-	private void login(String userID,String password) {
+	public void login(String userID,String password) {
 		String credentials[] = {userID,password};
 		sendToServer(credentials, ClientMessages.login);
 	}
-	private void register(String userID,String password) {
+	public void register(String userID,String password) {
 		String credentials[] = {userID,password};
 		sendToServer(credentials, ClientMessages.register);
+		if(this.serverAck) {
+			//do something...
+		}
 	}
-	private void unregister(String userID) {
+	public void unregister(String userID) {
 		sendToServer(userID, ClientMessages.unregister);
+		if(this.serverAck) {
+			//do something...
+		}
 	}
-	private void exchangeKeys(String key) {
+	public void exchangeKeys(String key) {
 		RSA rsa = new RSA(2048);// in practice 2048 is more than enough
 		CommonMethods.init();
 		String digest = new String(CommonMethods.md.digest(key.getBytes()));// create a digest of the encKey
@@ -163,12 +171,25 @@ public class Client {
 		String encKey = rsa.encrypt(key);// encrypt the message to be sent.
 		Object res[] = {encKey,sign,rsa};
 		sendToServer(res, ClientMessages.exchange_key);
+		if(this.serverAck) {
+			//do something...
+		}
 	}
-	private void storeFile(File fileToStore,String userID) {
+	public void storeFile(File fileToStore,String userID) {
 		CommonMethods.encryptFile(fileToStore, this.key);
 		CommonMethods.signFile(fileToStore);
 		Object[] res = {fileToStore,userID};
 		sendToServer(res, ClientMessages.store_file);
+		if(this.serverAck) {
+			//do something...
+		}
+	}
+	public void getFile(String userID,String fileName) {
+		String[] res = {userID,fileName};
+		sendToServer(res, ClientMessages.request_file);
+		if(this.fileFromServer != null) {
+			//do something
+		}
 	}
 	
 	
@@ -176,27 +197,15 @@ public class Client {
 
 	public void receiveFromServer(Object message, ServerResponse type) {
 		if(type == ServerResponse.request_file_Result) {//return file
-			
+			this.fileFromServer = (File) message;
+//			return f;
 		}else {//return ack
-			
+			this.serverAck = (boolean) message;
+//			return ack;
 		}
 	}
 
 	public void sendToServer(Object message, ClientMessages type) {
-		switch(type){
-		case login:
-			break;
-		case store_file:
-			break;
-		case register:
-			break;
-		case unregister:
-			break;
-		//--------------------------//
-		case exchange_key:
-			break;
-		case request_file:
-			break;
-	}
+		server.receiveFromClient(message, type);
 	}
 }
