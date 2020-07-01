@@ -86,9 +86,9 @@ public class CommonMethods {
 			e.printStackTrace();
 		}
 	}
-	public static void signFile(File fileToSign) {
+	public static void signFile(File fileToSign,RSA rsa) {
 		String fileContent = Utils.fileToString(fileToSign);
-		String signature = signMsg(fileContent,new RSA(2048));
+		String signature = signMsg(fileContent,rsa);
 		String newContent = signature+"\n"+fileContent;
 		try {
 			FileWriter myWriter = new FileWriter(fileToSign.getAbsolutePath());

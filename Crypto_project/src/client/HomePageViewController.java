@@ -32,7 +32,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private static FXMLLoader loader = null;
 
 	public void start(Stage primaryStage) throws Exception {
-		HomePageViewController controller = HomePageViewController.loadController();
+		HomePageViewController controller = this;
 		primaryStage.setScene(controller.loadMainScene());
 		primaryStage.show();
 	}
@@ -69,7 +69,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 	void chooseFile(ActionEvent event) {
 		// TODO Auto-generated method stub
 		spinner.setProgress(0.1);
-
+		
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Open Resource File");
 		fileChooser.getExtensionFilters().addAll(new ExtensionFilter("Audio Files", "*.wav"),
@@ -82,6 +82,10 @@ public class HomePageViewController extends Preloader implements Initializable {
 			spinner.setProgress(1);
 		}
 
+	}
+	
+	public void setUserProps(String userId) {
+		
 	}
 
 }

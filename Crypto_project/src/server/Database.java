@@ -18,6 +18,15 @@ public class Database {
 		files = new HashMap<>();
 		md = MessageDigest.getInstance("SHA-256");
 	}
+	public void populateDB() {
+		this.users.put("miras", new String(md.digest("123456".getBytes())));
+		this.files.put("miras", new ArrayList<>());
+		this.users.put("rani", new String(md.digest("123456789".getBytes())));
+		this.files.put("rani", new ArrayList<>());
+		this.users.put("Andrey", new String(md.digest("456123".getBytes())));
+		this.files.put("Andrey", new ArrayList<>());
+		
+	}
 	public static Database getInstance() throws NoSuchAlgorithmException {
 		if(instance == null)
 			return new Database();

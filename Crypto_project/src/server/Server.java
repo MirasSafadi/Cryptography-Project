@@ -12,12 +12,13 @@ import common.Utils;
 
 public class Server {
 	private Database db;
-	private Client client;
+	private static Client client = new Client();
 	private String key;
 	
 	public Server() {
 		try {
 			this.db = Database.getInstance();
+			this.db.populateDB();
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -57,9 +58,10 @@ public class Server {
 	private void storeFile(File encryptedFile,RSA rsa,String userID) {
 		//need to "destroy" the key for this session, i.e. assigning it to null
 		String signature = Utils.extactSignature(encryptedFile);
+		String contents = Utils.fileToString(encryptedFile);
 		CommonMethods.decryptFile(encryptedFile, this.key);
 		CommonMethods.init();
-		String contents = Utils.fileToString(encryptedFile);
+//		String contents = Utils.fileToString(encryptedFile);
 		String digest = new String(CommonMethods.md.digest(contents.getBytes()));
 		boolean verifySign = rsa.verifySignature(signature, digest);
 		boolean res = false;
@@ -69,13 +71,13 @@ public class Server {
 		}
 		sendToClient(res, ServerResponse.store_file_Result);
 	}
-	private void getFile(String userID,String filename) {
+	private void getFile(String userID,String filename,RSA rsa) {
 		File f = db.getFile(userID, filename);
 		if(f != null) {
 			//encrypt file using key exchanged earlier and send it to client.
 			CommonMethods.encryptFile(f, this.key);
 			//sign the file before sending it
-			CommonMethods.signFile(f);
+			CommonMethods.signFile(f,rsa);
 			//need to "destroy" the key for this session, i.e. assigning it to null
 			this.key = null;
 		}
@@ -83,20 +85,42 @@ public class Server {
 	}
 	
 	public void receiveFromClient(Object message,ClientMessages type) {
+		RSA rsa;
+		Object[] args;
 		switch(type){
 			case login:
+				String[] loginArgs = (String[]) message;
+				login(loginArgs[0], loginArgs[1]);
 				break;
 			case store_file:
+				args = (Object[]) message;
+				File f = (File) args[0];
+				String userID = (String) args[1];
+				rsa = (RSA) args[2];
+				storeFile(f, rsa, userID);
 				break;
 			case register:
+				String[] registerArgs = (String[]) message;
+				register(registerArgs[0], registerArgs[1]);
 				break;
 			case unregister:
+				String userIDToRemove = (String) message;
+				unregister(userIDToRemove);
 				break;
 			case exchange_key:
+				args = (Object[]) message;
+				String encKey = (String) args[0];
+				String sign = (String) args[1];
+				rsa = (RSA) args[2];
+				exchangeKey(encKey, sign, rsa);
 				break;
 			//--------------------------//	
 			case request_file:
-				
+				args = (Object[]) message;
+				String requestingUser = (String) args[0];
+				String fileName = (String) args[1];
+				rsa = (RSA) args[2];
+				getFile(requestingUser, fileName, rsa);
 				break;
 		}
 	}

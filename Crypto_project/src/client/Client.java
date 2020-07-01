@@ -8,25 +8,29 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
 //local imports
 import common.ClientMessages;
 import common.CommonMethods;
 import common.RSA;
 import common.ServerResponse;
+import common.Utils;
 import server.Server;
 
 public class Client{
 	private String userID;
-	private Server server;
+	private static Server server = new Server();
 	private String key;
 	
-	private File fileFromServer;
-	private boolean serverAck;
+	private static File fileFromServer;
+	private static boolean serverAck;
 	
 	
-	public Client(String userID) {
+	public void setUserID(String userID) {
 		this.userID = userID;
-		this.server = new Server();
+	}
+	public String getUserID() {
+		return this.userID;
 	}
 	/*
 	 * private static String byteArray2Hex(final byte[] hash) { Formatter formatter
@@ -144,24 +148,21 @@ public class Client{
 		CommonMethods.decryptFile(in, "30302030302037442030302030302020");
 	}
 	
-	public void login(String userID,String password) {
+	public boolean login(String userID,String password) {
 		String credentials[] = {userID,password};
 		sendToServer(credentials, ClientMessages.login);
+		return serverAck;
 	}
-	public void register(String userID,String password) {
+	public boolean register(String userID,String password) {
 		String credentials[] = {userID,password};
 		sendToServer(credentials, ClientMessages.register);
-		if(this.serverAck) {
-			//do something...
-		}
+		return serverAck;
 	}
-	public void unregister(String userID) {
+	public boolean unregister(String userID) {
 		sendToServer(userID, ClientMessages.unregister);
-		if(this.serverAck) {
-			//do something...
-		}
+		return serverAck;
 	}
-	public void exchangeKeys(String key) {
+	public boolean exchangeKeys(String key) {
 		RSA rsa = new RSA(2048);// in practice 2048 is more than enough
 		CommonMethods.init();
 		String digest = new String(CommonMethods.md.digest(key.getBytes()));// create a digest of the encKey
@@ -171,25 +172,40 @@ public class Client{
 		String encKey = rsa.encrypt(key);// encrypt the message to be sent.
 		Object res[] = {encKey,sign,rsa};
 		sendToServer(res, ClientMessages.exchange_key);
-		if(this.serverAck) {
-			//do something...
-		}
+		if(serverAck)
+			this.key = null;
+		return serverAck;
 	}
-	public void storeFile(File fileToStore,String userID) {
+	public boolean storeFile(File fileToStore,String userID) {
+		
 		CommonMethods.encryptFile(fileToStore, this.key);
-		CommonMethods.signFile(fileToStore);
-		Object[] res = {fileToStore,userID};
+		RSA rsa = new RSA(2048);
+		CommonMethods.signFile(fileToStore,rsa);
+		Object[] res = {fileToStore,userID,rsa};
 		sendToServer(res, ClientMessages.store_file);
-		if(this.serverAck) {
-			//do something...
-		}
+		if(serverAck)
+			this.key = null;
+		return serverAck;
 	}
-	public void getFile(String userID,String fileName) {
-		String[] res = {userID,fileName};
+	public File getFile(String userID,String fileName) {
+		RSA rsa = new RSA(2048);
+		Object[] res = {userID,fileName,rsa};
 		sendToServer(res, ClientMessages.request_file);
-		if(this.fileFromServer != null) {
-			//do something
+		//decrypt and verify signature
+		if(fileFromServer != null) {
+			String signature = Utils.extactSignature(fileFromServer);
+			String contents = Utils.fileToString(fileFromServer);
+			CommonMethods.decryptFile(fileFromServer, this.key);
+			CommonMethods.init();
+//			String contents = Utils.fileToString(fileFromServer);
+			String digest = new String(CommonMethods.md.digest(contents.getBytes()));
+			boolean verifySign = rsa.verifySignature(signature, digest);
+			if (verifySign)
+				this.key = null;
+			else//signature does not match 
+				fileFromServer = null;
 		}
+		return fileFromServer;
 	}
 	
 	
@@ -197,10 +213,10 @@ public class Client{
 
 	public void receiveFromServer(Object message, ServerResponse type) {
 		if(type == ServerResponse.request_file_Result) {//return file
-			this.fileFromServer = (File) message;
+			fileFromServer = (File) message;
 //			return f;
 		}else {//return ack
-			this.serverAck = (boolean) message;
+			serverAck = (boolean) message;
 //			return ack;
 		}
 	}

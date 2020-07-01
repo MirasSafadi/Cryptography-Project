@@ -28,12 +28,16 @@ public class LoginViewController extends Preloader implements Initializable {
 	@FXML
 	private PasswordField passwordTextField;
 	private final String password = "miras";
+	@FXML
+	private TextField  userIDTextField;
 
 	private VBox root;
 	private Scene scene;
 	private static FXMLLoader loader = null;
 	@FXML
 	private Label warningMsg;
+
+	private Client client;
 
 	public void start(Stage primaryStage) throws Exception {
 		LoginViewController controller = LoginViewController.loadController();
@@ -67,22 +71,23 @@ public class LoginViewController extends Preloader implements Initializable {
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		this.warningMsg.setVisible(false);
-
+		this.client = new Client();
 	}
 
 	@FXML
 	void onClickLoginBtn(ActionEvent event) {
-		if (passwordTextField.getText().equals(password)) {
+		String userID = userIDTextField.getText();
+		String password = passwordTextField.getText();
+		if (client.login(userID, password)) {
+			this.client.setUserID(userID);
 			// the password is correct move to next window.
 			Node source = (Node) event.getSource();
 			Window theStage = source.getScene().getWindow();
 			HomePageViewController homePage;
 			try {
 				homePage = HomePageViewController.loadController();
+				homePage.setUserProps(userID);
 				homePage.start((Stage) theStage);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
