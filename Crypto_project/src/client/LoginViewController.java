@@ -18,6 +18,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -93,6 +94,8 @@ public class LoginViewController extends Preloader implements Initializable {
 				e.printStackTrace();
 			}
 		} else {
+			this.warningMsg.setText("Wrong userID or password!");
+			this.warningMsg.setTextFill(Color.RED);
 			this.warningMsg.setVisible(true);
 		}
 	}
@@ -102,5 +105,19 @@ public class LoginViewController extends Preloader implements Initializable {
 		this.warningMsg.setVisible(false);
 
 	}
+    @FXML
+    void onClickRegisterBtn(ActionEvent event) {
+		String userID = userIDTextField.getText();
+		String password = passwordTextField.getText();
+		if(client.register(userID, password)){
+			this.warningMsg.setText("Registered Successfully!");
+			this.warningMsg.setTextFill(Color.GREEN);
+			this.warningMsg.setVisible(true);
+		}else {
+			this.warningMsg.setText("User exists");
+			this.warningMsg.setTextFill(Color.RED);
+			this.warningMsg.setVisible(true);
+		}
+    }
 
 }

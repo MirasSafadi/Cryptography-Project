@@ -44,7 +44,7 @@ public class Utils {
 	public static String[] Inputsplitter(String input, int length)
 	{
 		int len=input.length();
-		int zeroPadCheck=len%32;		//Save how many zeros we need to zero-pad the last input line
+		int zeroPadCheck=len%32;//Save how many zeros we need to zero-pad the last input line
 		if(zeroPadCheck!=0) len=(input.length()/32)+1;
 		else len=input.length()/32;
 		
@@ -96,6 +96,10 @@ public class Utils {
 		}
 		return sb.toString();
 	}
+	
+	
+	
+	
 	public static String extactSignature(File f) {
 		BufferedReader reader = null;
 		FileWriter myWriter = null;

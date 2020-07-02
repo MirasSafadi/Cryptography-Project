@@ -18,6 +18,7 @@ public class ClientUI  extends Application{
 	public void start(Stage primaryStage) throws Exception {
 		// TODO Auto-generated method stub
 		LoginViewController homePage = LoginViewController.loadController();
+		primaryStage.setResizable(false);
 		homePage.start(primaryStage);
 	}
 
