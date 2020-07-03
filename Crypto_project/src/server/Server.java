@@ -67,6 +67,7 @@ public class Server {
 		boolean res = false;
 		if(verifySign) {
 			res = db.addFile(userID, encryptedFile);
+			//if signature is verified, destroy the key
 			this.key = null;
 		}
 		sendToClient(res, ServerResponse.store_file_Result);

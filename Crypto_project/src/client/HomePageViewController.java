@@ -4,6 +4,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ResourceBundle;
 
 import common.Utils;
@@ -67,7 +71,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private Client client;
 	private boolean fileChosen;
 	private boolean storeKeyExchanged;
-	
+
 	private boolean dirChosen;
 	private boolean requestKeyExchanged;
 
@@ -103,12 +107,12 @@ public class HomePageViewController extends Preloader implements Initializable {
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		this.client = new Client();
-		addTextLimiter(storingKeyTF,16);
-		addTextLimiter(requestingKeyTF,16);
-		
+		addTextLimiter(storingKeyTF, 16);
+		addTextLimiter(requestingKeyTF, 16);
+
 		this.fileChosen = false;
 		this.storeKeyExchanged = false;
-		
+
 		this.dirChosen = false;
 		this.requestKeyExchanged = false;
 	}
@@ -146,12 +150,12 @@ public class HomePageViewController extends Preloader implements Initializable {
 			String wav = Utils.convertWAVtoHEX(this.selectedFile);
 			// System.out.println(wav);
 			System.out.println("length = " + wav.length());
-			
+
 			String[] output = Utils.Inputsplitter(wav, 32);
 			// -------------------------------------------------------------------------------------------//
 			// Fill the input file in the correct line length for further processing
 			String name = selectedFile.getName().split("\\.")[0];
-			File hexFile = new File(this.selectedFile.getParent() + "\\" + name +".txt");
+			File hexFile = new File(this.selectedFile.getParent() + "\\" + name + ".txt");
 			FileWriter writer = new FileWriter(hexFile);
 			int len = output.length;
 			for (int i = 0; i < len; i++) {
@@ -159,15 +163,12 @@ public class HomePageViewController extends Preloader implements Initializable {
 				writer.flush();
 			}
 			writer.close();
-			
+
 			client.storeFile(hexFile, userID);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-
-		
 
 		storingSpinner.progressProperty().unbind();
 		storingSpinner.setProgress(0.0);
@@ -206,13 +207,28 @@ public class HomePageViewController extends Preloader implements Initializable {
 	@FXML
 	void onClickGetFile(ActionEvent event) {
 		String fileName = fileNameTextField.getText();
-		if(fileName.isEmpty()) {
+		fileName += ".txt";
+		if (fileName.isEmpty()) {
 			requestingOutput.setTextFill(Color.RED);
 			requestingOutput.setText("Please provide file name!");
 			return;
 		}
-		
-		
+		File returnedFile = client.getFile(userID, fileName);
+		if (returnedFile == null) {
+			requestingOutput.setTextFill(Color.RED);
+			requestingOutput.setText("server error");
+			return;
+		}
+		Path temp = null;
+		try {
+			temp = Files.copy(Paths.get(returnedFile.getAbsolutePath()),
+					Paths.get(directoryTextField.getText() + "\\" + fileName),StandardCopyOption.REPLACE_EXISTING);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		requestSpinner.progressProperty().unbind();
 		requestSpinner.setProgress(0.0);
 		copyWorker1 = createWorker();
@@ -222,6 +238,15 @@ public class HomePageViewController extends Preloader implements Initializable {
 			}
 		});
 		new Thread(copyWorker1).start();
+		
+		if (temp != null) {
+			requestingOutput.setTextFill(Color.GREEN);
+			requestingOutput.setText("downloaded successfully!");
+//			System.out.println("File renamed and moved successfully");
+		} else {
+			requestingOutput.setTextFill(Color.RED);
+			requestingOutput.setText("server error");
+		}
 	}
 
 	@FXML
@@ -232,7 +257,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 			key = storingKeyTF.getText();
 			if (key == null || key.equals("") || key.length() <= 3) {
 				storingOutput.setTextFill(Color.RED);
-				storingOutput.setText("Key must not be empty and at least 3 charcters long");
+				storingOutput.setText("Key must not be empty and at least 4 charcters long");
 			} else {
 				if (!client.exchangeKeys(key)) {
 					storeKeyExchanged = false;
@@ -242,7 +267,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 					storeKeyExchanged = true;
 					storingOutput.setTextFill(Color.GREEN);
 					storingOutput.setText("Success!");
-						
+
 				}
 			}
 			boolean val = fileChosen & storeKeyExchanged;
@@ -251,7 +276,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 			key = requestingKeyTF.getText();
 			if (key == null || key.equals("") || key.length() <= 3) {
 				requestingOutput.setTextFill(Color.RED);
-				requestingOutput.setText("Key must not be empty and at least 3 charcters long");
+				requestingOutput.setText("Key must not be empty and at least 4 charcters long");
 			} else {
 				if (!client.exchangeKeys(key)) {
 					requestingOutput.setTextFill(Color.RED);
@@ -261,7 +286,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 					requestingOutput.setTextFill(Color.GREEN);
 					requestingOutput.setText("Success!");
 					this.requestKeyExchanged = true;
-					
+
 				}
 			}
 			boolean val = dirChosen & requestKeyExchanged;
@@ -283,16 +308,18 @@ public class HomePageViewController extends Preloader implements Initializable {
 			}
 		};
 	}
+
 	public static void addTextLimiter(final TextField tf, final int maxLength) {
-	    tf.textProperty().addListener(new ChangeListener<String>() {
-	        @Override
-	        public void changed(final ObservableValue<? extends String> ov, final String oldValue, final String newValue) {
-	            if (tf.getText().length() > maxLength) {
-	                String s = tf.getText().substring(0, maxLength);
-	                tf.setText(s);
-	            }
-	        }
-	    });
+		tf.textProperty().addListener(new ChangeListener<String>() {
+			@Override
+			public void changed(final ObservableValue<? extends String> ov, final String oldValue,
+					final String newValue) {
+				if (tf.getText().length() > maxLength) {
+					String s = tf.getText().substring(0, maxLength);
+					tf.setText(s);
+				}
+			}
+		});
 	}
 
 }

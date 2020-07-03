@@ -28,7 +28,6 @@ public class LoginViewController extends Preloader implements Initializable {
 
 	@FXML
 	private PasswordField passwordTextField;
-	private final String password = "miras";
 	@FXML
 	private TextField  userIDTextField;
 
@@ -109,6 +108,12 @@ public class LoginViewController extends Preloader implements Initializable {
     void onClickRegisterBtn(ActionEvent event) {
 		String userID = userIDTextField.getText();
 		String password = passwordTextField.getText();
+		if(userID.isEmpty() || password.isEmpty()) {
+			this.warningMsg.setText("Username and/or password is empty");
+			this.warningMsg.setTextFill(Color.RED);
+			this.warningMsg.setVisible(true);
+			return;
+		}
 		if(client.register(userID, password)){
 			this.warningMsg.setText("Registered Successfully!");
 			this.warningMsg.setTextFill(Color.GREEN);
