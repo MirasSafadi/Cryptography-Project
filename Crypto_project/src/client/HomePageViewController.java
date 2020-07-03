@@ -23,6 +23,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -57,6 +58,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private Button storeExchangeBtn;
 
 	Task copyWorker;
+	Task copyWorker1;
 	private File selectedFile;
 	private VBox root;
 	private Scene scene;
@@ -65,6 +67,9 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private Client client;
 	private boolean fileChosen;
 	private boolean storeKeyExchanged;
+	
+	private boolean dirChosen;
+	private boolean requestKeyExchanged;
 
 	public void start(Stage primaryStage) throws Exception {
 		HomePageViewController controller = this;
@@ -100,8 +105,12 @@ public class HomePageViewController extends Preloader implements Initializable {
 		this.client = new Client();
 		addTextLimiter(storingKeyTF,16);
 		addTextLimiter(requestingKeyTF,16);
+		
 		this.fileChosen = false;
 		this.storeKeyExchanged = false;
+		
+		this.dirChosen = false;
+		this.requestKeyExchanged = false;
 	}
 
 	public void setUserProps(String userId) {
@@ -174,12 +183,45 @@ public class HomePageViewController extends Preloader implements Initializable {
 
 	@FXML
 	void chooseDir(ActionEvent event) {
-
+		Stage stage = (Stage) directoryTextField.getScene().getWindow();
+		DirectoryChooser chooser = new DirectoryChooser();
+		chooser.setTitle("Choose Download Destination");
+		File selectedDirectory = chooser.showDialog(stage);
+		if (selectedDirectory != null) {
+			String dest = selectedDirectory.getAbsolutePath();
+			directoryTextField.setText(dest);
+			this.dirChosen = true;
+		}
+		// if user didn't choose, provide feedback and display error message
+		if (directoryTextField.getText().isEmpty()) {
+			this.dirChosen = false;
+			directoryTextField.setStyle("-fx-text-fill: red; -fx-border-color: red;");
+			directoryTextField.setText("Please provide download path");
+		}
+		boolean val = dirChosen & requestKeyExchanged;
+		fileNameTextField.setDisable(!val);
+		getFileBtn.setDisable(!val);
 	}
 
 	@FXML
 	void onClickGetFile(ActionEvent event) {
-
+		String fileName = fileNameTextField.getText();
+		if(fileName.isEmpty()) {
+			requestingOutput.setTextFill(Color.RED);
+			requestingOutput.setText("Please provide file name!");
+			return;
+		}
+		
+		
+		requestSpinner.progressProperty().unbind();
+		requestSpinner.setProgress(0.0);
+		copyWorker1 = createWorker();
+		requestSpinner.progressProperty().bind(copyWorker1.progressProperty());
+		copyWorker1.messageProperty().addListener(new ChangeListener<String>() {
+			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+			}
+		});
+		new Thread(copyWorker1).start();
 	}
 
 	@FXML
@@ -214,13 +256,17 @@ public class HomePageViewController extends Preloader implements Initializable {
 				if (!client.exchangeKeys(key)) {
 					requestingOutput.setTextFill(Color.RED);
 					requestingOutput.setText("server error");
+					this.requestKeyExchanged = false;
 				} else {
 					requestingOutput.setTextFill(Color.GREEN);
 					requestingOutput.setText("Success!");
-					fileNameTextField.setDisable(false);
-					getFileBtn.setDisable(false);
+					this.requestKeyExchanged = true;
+					
 				}
 			}
+			boolean val = dirChosen & requestKeyExchanged;
+			fileNameTextField.setDisable(!val);
+			getFileBtn.setDisable(!val);
 		}
 	}
 

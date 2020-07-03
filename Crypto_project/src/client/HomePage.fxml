@@ -68,7 +68,7 @@
                </HBox.margin>
             </TextField>
             <Button fx:id="requestExchangeBtn" layoutX="178.0" layoutY="23.0" mnemonicParsing="false" onAction="#onClickExchange" styleClass="file_uploader_btn" text="Exchange" />
-            <TextField fx:id="fileNameTextField" disable="true" editable="false" focusTraversable="false" layoutX="20.0" layoutY="48.0" promptText="File name">
+            <TextField fx:id="fileNameTextField" disable="true" focusTraversable="false" layoutX="20.0" layoutY="48.0" promptText="File name">
                <HBox.margin>
                   <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                </HBox.margin>
