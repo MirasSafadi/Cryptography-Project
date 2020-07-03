@@ -40,6 +40,23 @@ public class Utils {
 		}
 		return p;
 	}
+	public static String toHexString(String in) {
+		String out;
+		StringBuffer sb = new StringBuffer();
+		char ch[] = in.toCharArray();
+		for (int i = 0; i < ch.length; i++) {
+			String hexString = Integer.toHexString(ch[i]);
+			sb.append(hexString);
+		}
+		out = sb.toString();
+		if(out.length() < 32) {//pad with zeros
+			char[] c = new char[32-out.length()];
+			Arrays.fill(c, '0');
+			String s = new String(c);
+			out = s + out;
+		}
+		return out;
+	}
 	
 	public static String[] Inputsplitter(String input, int length)
 	{
@@ -72,10 +89,17 @@ public class Utils {
 		StringBuilder sb = new StringBuilder();
 		BufferedReader reader = new BufferedReader(new FileReader(wavInput));
 		int value;
+//		int count = 0;
 		while ((value = reader.read()) != -1) {
-			for (byte b : TwoFish.asBytes(value)) {
-				sb.append(String.format("%02X", b));
-			}
+			sb.append(String.format("%04x", value).toUpperCase());
+//			count += 4;
+//			if(count == 32) {
+//				sb.append("\n");
+//				count = 0;
+//			}
+//			for (byte b : TwoFish.asBytes(value)) {
+//				sb.append(String.format("%02X", b));
+//			}
 		}
 		reader.close();
 		return sb.toString();
@@ -87,8 +111,10 @@ public class Utils {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(f));
 			String st;
-			while ((st = br.readLine()) != null)
+			while ((st = br.readLine()) != null) {
 				sb.append(st);
+				sb.append("\n");
+			}
 			br.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

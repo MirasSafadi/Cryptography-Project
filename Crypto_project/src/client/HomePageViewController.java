@@ -22,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
@@ -46,6 +47,14 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private Button storeFileBtn;
 	@FXML
 	private Button getFileBtn;
+	@FXML
+	private TextField requestingKeyTF;
+	@FXML
+	private TextField storingKeyTF;
+	@FXML
+	private Button requestExchangeBtn;
+	@FXML
+	private Button storeExchangeBtn;
 
 	Task copyWorker;
 	private File selectedFile;
@@ -54,6 +63,8 @@ public class HomePageViewController extends Preloader implements Initializable {
 	private static FXMLLoader loader = null;
 	private String userID;
 	private Client client;
+	private boolean fileChosen;
+	private boolean storeKeyExchanged;
 
 	public void start(Stage primaryStage) throws Exception {
 		HomePageViewController controller = this;
@@ -87,6 +98,10 @@ public class HomePageViewController extends Preloader implements Initializable {
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		this.client = new Client();
+		addTextLimiter(storingKeyTF,16);
+		addTextLimiter(requestingKeyTF,16);
+		this.fileChosen = false;
+		this.storeKeyExchanged = false;
 	}
 
 	public void setUserProps(String userId) {
@@ -109,9 +124,11 @@ public class HomePageViewController extends Preloader implements Initializable {
 		if (selectedFile != null) {
 			this.filePathTextField.setText(selectedFile.getAbsolutePath());
 //			this.storingSpinner.setProgress(1);
-			storeFileBtn.setDisable(false);
+//			storeFileBtn.setDisable(false);
+			this.fileChosen = true;
 		}
-
+		boolean val = fileChosen & storeKeyExchanged;
+		storeFileBtn.setDisable(!val);
 	}
 
 	@FXML
@@ -120,24 +137,29 @@ public class HomePageViewController extends Preloader implements Initializable {
 			String wav = Utils.convertWAVtoHEX(this.selectedFile);
 			// System.out.println(wav);
 			System.out.println("length = " + wav.length());
+			
 			String[] output = Utils.Inputsplitter(wav, 32);
 			// -------------------------------------------------------------------------------------------//
 			// Fill the input file in the correct line length for further processing
-		
-			FileWriter writer = new FileWriter(this.selectedFile.getParent()+"\\"+"WAVtoHEX.txt");
+			String name = selectedFile.getName().split("\\.")[0];
+			File hexFile = new File(this.selectedFile.getParent() + "\\" + name +".txt");
+			FileWriter writer = new FileWriter(hexFile);
 			int len = output.length;
 			for (int i = 0; i < len; i++) {
 				writer.write(output[i] + '\n');
 				writer.flush();
 			}
 			writer.close();
+			
+			client.storeFile(hexFile, userID);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		client.storeFile(selectedFile, userID);
+
 		
+
 		storingSpinner.progressProperty().unbind();
 		storingSpinner.setProgress(0.0);
 		copyWorker = createWorker();
@@ -147,9 +169,7 @@ public class HomePageViewController extends Preloader implements Initializable {
 			}
 		});
 		new Thread(copyWorker).start();
-		
-		
-		
+
 	}
 
 	@FXML
@@ -162,18 +182,71 @@ public class HomePageViewController extends Preloader implements Initializable {
 
 	}
 
+	@FXML
+	void onClickExchange(ActionEvent event) {
+		String id = ((Button) event.getSource()).getId();
+		String key;
+		if (id.equals("storeExchangeBtn")) {
+			key = storingKeyTF.getText();
+			if (key == null || key.equals("") || key.length() <= 3) {
+				storingOutput.setTextFill(Color.RED);
+				storingOutput.setText("Key must not be empty and at least 3 charcters long");
+			} else {
+				if (!client.exchangeKeys(key)) {
+					storeKeyExchanged = false;
+					storingOutput.setTextFill(Color.RED);
+					storingOutput.setText("server error");
+				} else {
+					storeKeyExchanged = true;
+					storingOutput.setTextFill(Color.GREEN);
+					storingOutput.setText("Success!");
+						
+				}
+			}
+			boolean val = fileChosen & storeKeyExchanged;
+			storeFileBtn.setDisable(!val);
+		} else if (id.equals("requestExchangeBtn")) {
+			key = requestingKeyTF.getText();
+			if (key == null || key.equals("") || key.length() <= 3) {
+				requestingOutput.setTextFill(Color.RED);
+				requestingOutput.setText("Key must not be empty and at least 3 charcters long");
+			} else {
+				if (!client.exchangeKeys(key)) {
+					requestingOutput.setTextFill(Color.RED);
+					requestingOutput.setText("server error");
+				} else {
+					requestingOutput.setTextFill(Color.GREEN);
+					requestingOutput.setText("Success!");
+					fileNameTextField.setDisable(false);
+					getFileBtn.setDisable(false);
+				}
+			}
+		}
+	}
+
 	public Task createWorker() {
 		return new Task() {
 			@Override
 			protected Object call() throws Exception {
 				for (int i = 0; i < 10; i++) {
 					Thread.sleep(1000);
-					updateMessage(String.valueOf(((i*10) + 10)));
+					updateMessage(String.valueOf(((i * 10) + 10)));
 					updateProgress(i + 1, 10);
 				}
 				return true;
 			}
 		};
+	}
+	public static void addTextLimiter(final TextField tf, final int maxLength) {
+	    tf.textProperty().addListener(new ChangeListener<String>() {
+	        @Override
+	        public void changed(final ObservableValue<? extends String> ov, final String oldValue, final String newValue) {
+	            if (tf.getText().length() > maxLength) {
+	                String s = tf.getText().substring(0, maxLength);
+	                tf.setText(s);
+	            }
+	        }
+	    });
 	}
 
 }

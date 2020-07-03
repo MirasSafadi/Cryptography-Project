@@ -27,7 +27,7 @@ public class CommonMethods {
 	}
 	//encrypts the file in place - does not create a new one.
 	public static void encryptFile(File plainText, String key) {
-		int[] keyArr = Utils.StringTointArray(key);
+		int[] keyArr = Utils.StringTointArray(Utils.toHexString(key));
 		BufferedReader reader = null;
 		FileWriter myWriter = null;
 		try {
@@ -60,7 +60,7 @@ public class CommonMethods {
 	public static void decryptFile(File cipherText, String key) {
 		// this code opens an input file, writes it's contents on an out file (created
 		// within)
-		int[] keyArr = Utils.StringTointArray(key);
+		int[] keyArr = Utils.StringTointArray(Utils.toHexString(key));
 		BufferedReader reader = null;
 		FileWriter myWriter = null;
 		try {

@@ -57,6 +57,13 @@ public class Client{
 	 * }
 	 */
 	public static void main(String[] args) {
+		System.out.println(false & false);
+		System.out.println(false & true);
+		System.out.println(true & false);
+		System.out.println(true & true);
+		
+		
+		
 		RSA rsa = new RSA(2048);// in practice 2048 is more than enough
 		// on sender side:
 		String msg = "twoFish is nice";
@@ -173,7 +180,7 @@ public class Client{
 		Object res[] = {encKey,sign,rsa};
 		sendToServer(res, ClientMessages.exchange_key);
 		if(serverAck)
-			this.key = null;
+			this.key = key;
 		return serverAck;
 	}
 	public boolean storeFile(File fileToStore,String userID) {
