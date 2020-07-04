@@ -126,7 +126,7 @@ public class Utils {
 	
 	
 	
-	public static String extactSignature(File f) {
+	public static String extractSignature(File f) {
 		BufferedReader reader = null;
 		FileWriter myWriter = null;
 		String signature = null;

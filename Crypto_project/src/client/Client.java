@@ -6,6 +6,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -186,6 +190,18 @@ public class Client{
 	public boolean storeFile(File fileToStore,String userID) {
 		
 		CommonMethods.encryptFile(fileToStore, this.key);
+		String fileName = fileToStore.getName().split("\\.")[0]+"_enc."+fileToStore.getName().split("\\.")[1];
+		
+		try {
+			Files.copy(Paths.get(fileToStore.getAbsolutePath()),
+					Paths.get("C:\\Users\\Pc\\Desktop\\crypto project\\client side\\"+fileName),
+					StandardCopyOption.REPLACE_EXISTING);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		RSA rsa = new RSA(2048);
 		CommonMethods.signFile(fileToStore,rsa);
 		Object[] res = {fileToStore,userID,rsa};
@@ -200,7 +216,7 @@ public class Client{
 		sendToServer(res, ClientMessages.request_file);
 		//decrypt and verify signature
 		if(fileFromServer != null) {
-			String signature = Utils.extactSignature(fileFromServer);
+			String signature = Utils.extractSignature(fileFromServer);
 			String contents = Utils.fileToString(fileFromServer);
 			CommonMethods.decryptFile(fileFromServer, this.key);
 			CommonMethods.init();

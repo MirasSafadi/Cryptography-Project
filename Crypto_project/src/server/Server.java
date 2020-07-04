@@ -1,6 +1,10 @@
 package server;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.NoSuchAlgorithmException;
 
 import client.Client;
@@ -56,8 +60,21 @@ public class Server {
 		sendToClient(exchgKeyResult, ServerResponse.exchange_Key);
 	}
 	private void storeFile(File encryptedFile,RSA rsa,String userID) {
+		//copy encrypted file to server directory
+		String fileName = encryptedFile.getName().split("\\.")[0]+"_enc."+encryptedFile.getName().split("\\.")[1];
+		try {
+			Files.copy(Paths.get(encryptedFile.getAbsolutePath()),
+					Paths.get("C:\\Users\\Pc\\Desktop\\crypto project\\server side\\"+fileName),
+					StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 		//need to "destroy" the key for this session, i.e. assigning it to null
-		String signature = Utils.extactSignature(encryptedFile);
+		String signature = Utils.extractSignature(encryptedFile);
 		String contents = Utils.fileToString(encryptedFile);
 		CommonMethods.decryptFile(encryptedFile, this.key);
 		CommonMethods.init();
@@ -69,6 +86,15 @@ public class Server {
 			res = db.addFile(userID, encryptedFile);
 			//if signature is verified, destroy the key
 			this.key = null;
+		}
+		fileName = encryptedFile.getName().split("\\.")[0]+"_dec."+encryptedFile.getName().split("\\.")[1];
+		try {
+			Files.copy(Paths.get(encryptedFile.getAbsolutePath()),
+					Paths.get("C:\\Users\\Pc\\Desktop\\crypto project\\server side\\"+fileName),
+					StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		sendToClient(res, ServerResponse.store_file_Result);
 	}
